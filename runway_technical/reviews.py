@@ -9,7 +9,7 @@ import re
 
 
 ITUNES_RSS_URL: str = "https://itunes.apple.com/rss/customerreviews/id={id}/page={page}/sortby=mostrecent/json"
-
+store_app_id = {}
 
 def url_link(app_id, page_number):
     url = ITUNES_RSS_URL.format(id=app_id, page=page_number)
@@ -78,4 +78,5 @@ def fetch_reviews_id(app_id, page_number=1):
 def get_url(user_input):
     get_id = re.findall('\d+', user_input)
     app_id = str(get_id[0])
+    store_app_id["app_id"] = app_id
     fetch_reviews_id(app_id)

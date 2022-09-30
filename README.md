@@ -1,7 +1,10 @@
 # Runway Take Home Assignment
 
 # Overview
-
+I have set up a FastAPI web service that can be run locally or with Docker. 
+Poetry is used as the tool of choice for dependency management and packaging.
+If you are interested in an applications review you can choose to either input an app id 
+or a link. There is a default app id found in runway_technical/main.py file. This is what is used 
 
 ## Set Up
 
@@ -43,15 +46,20 @@ sudo docker cp {CONTAINER ID}:/code/reviews.csv ~/{PATH}
 
 ## Alternative
 
-If you do not want to run it through Docker you can run this command:
+Alternatively you can run this command:
 ```
 uvicorn runway_technical.main:app --reload
 ```
 
-## Data
+## Using the service
 
 The web service should look like this:
 
 ![alt text](screenshots/html_page.png)
 
 Submit an app ID or URL. Once you hit submit a csv should download a few seconds later.
+If you do not input anything it will default to DEFAULT_APP_ID found in the runway_technical/main.py file:
+
+```
+DEFAULT_APP_ID: str = "447188370"
+```

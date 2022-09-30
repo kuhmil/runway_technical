@@ -5,23 +5,19 @@ from typing import Any, Optional
 from fastapi.responses import FileResponse
 import time
 from runway_technical.csv_reader import csv_header, csv_check
-from runway_technical.reviews import get_url
+from runway_technical.reviews import get_url, store_app_id
 import time
 from fastapi_utils.tasks import repeat_every
-
 
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="runway_technical/templates/")
 
-DEFAULT_APP_ID: str = "447188370"
-
 file_path = 'reviews.csv'
 csv_header(file_path)
 
 def user_input(app_id, url_string):
-    app_input = DEFAULT_APP_ID
 
     if app_id:
         app_input = app_id
@@ -30,11 +26,6 @@ def user_input(app_id, url_string):
         app_input = url_string
     
     return app_input 
-
-@app.on_event("startup")
-@repeat_every(seconds=24 * 60 * 60)  # 24 hours
-async def csv_refresh():
-    get_url(DEFAULT_APP_ID)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -50,7 +41,7 @@ async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] =
 
     try:
         app_id_input = user_input(app_id, url_string)
-        print(app_id_input)
+
         if app_id_input:
             get_url(app_id_input)
             time.sleep(2.4)
@@ -66,3 +57,9 @@ async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] =
 
     return FileResponse(path=file_path, filename=file_path, media_type=file_path)
 
+
+@app.on_event("startup")
+@repeat_every(seconds=24 * 60 * 60)  # 24 hours
+async def csv_refresh():
+    if store_app_id["app_id"]:
+        get_url(store_app_id["app_id"])
