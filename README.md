@@ -52,6 +52,6 @@ uvicorn runway_technical.main:app --reload
 
 The web service should look like this:
 
-![alt text](screenshots/aws.png)
+![alt text](screenshots/html_page.png)
 
 Submit an app ID or URL. Once you hit submit a csv should download a few seconds later.
