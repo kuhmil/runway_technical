@@ -12,11 +12,15 @@ ITUNES_RSS_URL: str = "https://itunes.apple.com/rss/customerreviews/id={id}/page
 store_app_id = {}
 
 def url_link(app_id, page_number):
+    """Create URL for feed"""
+
     url = ITUNES_RSS_URL.format(id=app_id, page=page_number)
     return url
 
 
 def get_source(url):
+    """Check if URL is valid"""
+
     try:
         session = HTMLSession()
         response = session.get(url)
@@ -27,10 +31,13 @@ def get_source(url):
 
 
 def time_iso_utc(time_stamp):
+    """Convert to UTC time"""
+
     time_stamp = dateutil.parser.isoparse(time_stamp).astimezone(UTC).replace(tzinfo=None)
     return time_stamp
 
 def time_check(entry_time_stamp):
+    """Check time difference between now and the review. All in UTC time"""
 
     time_limit = (datetime.utcnow()- timedelta(hours = 24)).replace(microsecond=0)
     entry_time_stamp = time_iso_utc(entry_time_stamp)
@@ -40,6 +47,7 @@ def time_check(entry_time_stamp):
 
 
 def fetch_reviews_id(app_id, page_number=1):
+    """Fetch app reviews within the 24 hour limit. Pagination stops when the time limit has been reached"""
     
     url = url_link(app_id, page_number)
 
@@ -61,7 +69,7 @@ def fetch_reviews_id(app_id, page_number=1):
                 review = entry.get('content').get('label')
                 vote_count = entry.get('im:voteCount').get('label')
                 
-                if time_check(time_stamp) <= 1440.00:
+                if time_check(time_stamp) <= 1440.00: #1440 minutes = 24 hours
                     data = [title, time_iso_utc(time_stamp), rating, review, vote_count]
                     csv_reader(data)
 
@@ -76,6 +84,7 @@ def fetch_reviews_id(app_id, page_number=1):
 
 
 def get_url(user_input):
+    """Parses user input into a readable value. Stores app id in a dictionary"""
     get_id = re.findall('\d+', user_input)
     app_id = str(get_id[0])
     store_app_id["app_id"] = app_id

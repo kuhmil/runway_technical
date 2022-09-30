@@ -1,13 +1,11 @@
 from fastapi import Form, Request, FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
-from typing import Any, Optional
-from fastapi.responses import FileResponse
-import time
+from fastapi_utils.tasks import repeat_every
 from runway_technical.csv_reader import csv_header, csv_check
 from runway_technical.reviews import get_url, store_app_id
+from typing import Optional
 import time
-from fastapi_utils.tasks import repeat_every
 
 
 app = FastAPI()
@@ -17,7 +15,9 @@ templates = Jinja2Templates(directory="runway_technical/templates/")
 file_path = 'reviews.csv'
 csv_header(file_path)
 
+
 def user_input(app_id, url_string):
+    """Evaluates if there is a value for either one. If there are two inputs the url_string is taken into account over the app ID input"""
 
     if app_id:
         app_input = app_id
@@ -25,7 +25,8 @@ def user_input(app_id, url_string):
     if url_string:
         app_input = url_string
     
-    return app_input 
+    return app_input
+
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -37,7 +38,7 @@ def index(request: Request):
 
 @app.post("/submit")
 async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] = Form(None)):
-    """Submit endpoint."""
+    """Submit endpoint. Takes user input and uses the app ID to find reviews on the app. Outputs a csv with the reviews if there has been any in the last 24 hours"""
 
     try:
         app_id_input = user_input(app_id, url_string)
@@ -59,7 +60,9 @@ async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] =
 
 
 @app.on_event("startup")
-@repeat_every(seconds=24 * 60 * 60)  # 24 hours
+@repeat_every(seconds=24 * 60 * 60) # Currently set to every 24 hours
 async def csv_refresh():
+    """Updates csv if run locally or through docker. The seconds can be adjusted to the timing preference"""
+
     if store_app_id["app_id"]:
         get_url(store_app_id["app_id"])

@@ -2,9 +2,13 @@
 
 # Overview
 I have set up a FastAPI web service that can be run locally or with Docker. 
-Poetry is used as the tool of choice for dependency management and packaging.
-If you are interested in an applications review you can choose to either input an app id 
-or a link. There is a default app id found in runway_technical/main.py file. This is what is used 
+Poetry is used for the dependency management and packaging.
+When you run the web service you can either input an app ID or a URL. 
+If there is no input the service will crash.
+Once the submit button is pressed, a csv file will download. That app ID is the then stored
+in a dictionary. This allows the csv_refresh function found in runway_technical/main.py,
+to update the csv file every 24 hours with that ID. This timing can also be changed.
+
 
 ## Set Up
 
@@ -37,7 +41,7 @@ docker build -t runway_image .
 docker run -d --name runway_technical -p 80:80 runway_image
 ```
 
-To get the csv file that is continuously updated you can extract it by:
+To get the csv file that is continuously updated, you can extract it by:
 
 ```
 sudo docker container ls 
@@ -57,9 +61,4 @@ The web service should look like this:
 
 ![alt text](screenshots/html_page.png)
 
-Submit an app ID or URL. Once you hit submit a csv should download a few seconds later.
-If you do not input anything it will default to DEFAULT_APP_ID found in the runway_technical/main.py file:
-
-```
-DEFAULT_APP_ID: str = "447188370"
-```
+Submit an app ID or URL. Once you hit the submit button a csv should download a few seconds later.
