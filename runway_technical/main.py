@@ -5,9 +5,10 @@ from typing import Any, Optional
 from fastapi.responses import FileResponse
 import time
 from runway_technical.csv_reader import csv_header, csv_check
-from pydantic import BaseModel
-
 from runway_technical.reviews import get_url
+import time
+from fastapi_utils.tasks import repeat_every
+
 
 
 app = FastAPI()
@@ -15,6 +16,9 @@ app = FastAPI()
 templates = Jinja2Templates(directory="runway_technical/templates/")
 
 DEFAULT_APP_ID: str = "447188370"
+
+file_path = 'reviews.csv'
+csv_header(file_path)
 
 def user_input(app_id, url_string):
     app_input = DEFAULT_APP_ID
@@ -27,6 +31,11 @@ def user_input(app_id, url_string):
     
     return app_input 
 
+@app.on_event("startup")
+@repeat_every(seconds=24 * 60 * 60)  # 24 hours
+async def csv_refresh():
+    get_url(DEFAULT_APP_ID)
+
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -35,14 +44,9 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {'request': request})
 
 
-
 @app.post("/submit")
 async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] = Form(None)):
     """Submit endpoint."""
-
-    file_path = 'reviews.csv'
-    csv_header(file_path)
-
 
     try:
         app_id_input = user_input(app_id, url_string)
@@ -61,3 +65,4 @@ async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] =
     csv_check(file_path, ["There are no reviews in the last 24 hours"])
 
     return FileResponse(path=file_path, filename=file_path, media_type=file_path)
+

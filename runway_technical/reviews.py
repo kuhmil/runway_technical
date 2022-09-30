@@ -1,13 +1,9 @@
-import urllib.request, json, time, csv, sys
-from datetime import datetime, timezone, timedelta
+import urllib.request, json
+from datetime import datetime, timedelta
 from requests_html import HTMLSession
-import requests
 import logging
-import pytz as pytz
 import dateutil.parser
-from dateutil.parser import parse
 from dateutil.tz import UTC
-import pandas as pd
 from runway_technical.csv_reader import csv_reader
 import re
 
@@ -41,7 +37,6 @@ def time_check(entry_time_stamp):
     time_delta = ((time_limit-entry_time_stamp).total_seconds())/ 60
 
     return float(time_delta)
-
 
 
 def fetch_reviews_id(app_id, page_number=1):
