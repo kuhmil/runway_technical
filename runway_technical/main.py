@@ -1,59 +1,50 @@
-import requests
-import pandas as pd
-from requests_html import HTMLSession
-import feedparser
+from fastapi import Form, Request, FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from typing import Any, Optional
+from fastapi.responses import FileResponse
+import time
+from runway_technical.csv_reader import csv_header
+
+from runway_technical.reviews import fetch_reviews_id, check_url, get_url
 
 
-def get_source(url):
-    """Return the source code for the provided URL. 
+app = FastAPI()
 
-    Args: 
-        url (string): URL of the page to scrape.
-P
-    Returns:
-        response (object): HTTP response object from requests_html. 
-    """
+templates = Jinja2Templates(directory="runway_technical/templates/")
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    """Root Endpoint"""
+
+    return templates.TemplateResponse("index.html", {'request': request})
+
+
+@app.post("/submit")
+async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] = Form(None), url_itunes_string: Optional[str] = Form(None)):
+    """Submit endpoint. Takes list input and cloud platform choice of AWS or GCP. Downloads csv file"""
+
+    file_path = 'reviews.csv'
+    csv_header(file_path)
 
     try:
-        session = HTMLSession()
-        response = session.get(url)
-        return response
+        if app_id:
+            fetch_reviews_id(str(app_id))
+            time.sleep(2.4)
 
-    except requests.exceptions.RequestException as e:
-        print(e)
+        elif url_itunes_string:
+            check_url(str(url_string))
+            time.sleep(2.4)
+            
+        elif url_string:
+            get_url(str(url_string))
+            time.sleep(2.4)
 
-def get_feed(url):
-    """Return a Pandas dataframe containing the RSS feed contents.
-
-    Args: 
-        url (string): URL of the RSS feed to read.
-
-    Returns:
-        df (dataframe): Pandas dataframe containing the RSS feed contents.
-    """
+        else:
+            print("Invalid input")
     
-    response = get_source(url)
-    
-    df = pd.DataFrame(columns = ['bozo', 'entries', 'feed', 'headers', 'href', 'status', 'encoding', 'bozo_exception', 'version', 'namespaces'])
-    print(df)
+    except Exception as e:
+        raise print(f"Error: {e}")
 
-    with response as r:
-        items = r.html.find("item", first=False)
-
-        for item in items:
-            print(item)     
-
-    #         title = item.find('title', first=True).text
-    #         pubDate = item.find('pubDate', first=True).text
-    #         guid = item.find('guid', first=True).text
-    #         description = item.find('description', first=True).text
-
-    #         row = {'title': title, 'pubDate': pubDate, 'guid': guid, 'description': description}
-    #         df = df.append(row, ignore_index=True)
-
-    # return df
-
-
-feed_url = "https://itunes.apple.com/us/rss/customerreviews/id=595068606/sortBy=mostRecent/page=1/json"
-blog_feed = feedparser.parse(feed_url)
-print(blog_feed)
+    return FileResponse(path=file_path, filename=file_path, media_type=file_path)
