@@ -4,14 +4,28 @@ from fastapi.templating import Jinja2Templates
 from typing import Any, Optional
 from fastapi.responses import FileResponse
 import time
-from runway_technical.csv_reader import csv_header
+from runway_technical.csv_reader import csv_header, csv_check
+from pydantic import BaseModel
 
-from runway_technical.reviews import fetch_reviews_id, check_url, get_url
+from runway_technical.reviews import get_url
 
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="runway_technical/templates/")
+
+DEFAULT_APP_ID: str = "447188370"
+
+def user_input(app_id, url_string):
+    app_input = DEFAULT_APP_ID
+
+    if app_id:
+        app_input = app_id
+
+    if url_string:
+        app_input = url_string
+    
+    return app_input 
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -21,30 +35,29 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {'request': request})
 
 
+
 @app.post("/submit")
-async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] = Form(None), url_itunes_string: Optional[str] = Form(None)):
-    """Submit endpoint. Takes list input and cloud platform choice of AWS or GCP. Downloads csv file"""
+async def submit(app_id: Optional[str] = Form(None), url_string: Optional[str] = Form(None)):
+    """Submit endpoint."""
 
     file_path = 'reviews.csv'
     csv_header(file_path)
 
-    try:
-        if app_id:
-            fetch_reviews_id(str(app_id))
-            time.sleep(2.4)
 
-        elif url_itunes_string:
-            check_url(str(url_string))
-            time.sleep(2.4)
-            
-        elif url_string:
-            get_url(str(url_string))
+    try:
+        app_id_input = user_input(app_id, url_string)
+        print(app_id_input)
+        if app_id_input:
+            get_url(app_id_input)
             time.sleep(2.4)
 
         else:
             print("Invalid input")
     
     except Exception as e:
+        csv_check(file_path, ["An exception was raised"])
         raise print(f"Error: {e}")
+
+    csv_check(file_path, ["There are no reviews in the last 24 hours"])
 
     return FileResponse(path=file_path, filename=file_path, media_type=file_path)

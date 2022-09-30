@@ -30,88 +30,57 @@ def get_source(url):
         logging.error(f"URL does not exist: {e}")
 
 
+def time_iso_utc(time_stamp):
+    time_stamp = dateutil.parser.isoparse(time_stamp).astimezone(UTC).replace(tzinfo=None)
+    return time_stamp
 
 def time_check(entry_time_stamp):
 
-    time_one_day = (datetime.utcnow()- timedelta(hours = 24)).replace(microsecond=0)
-    entry_time_stamp = dateutil.parser.isoparse(entry_time_stamp).astimezone(UTC).replace(tzinfo=None)
-    time_delta = ((time_one_day-entry_time_stamp).total_seconds())/ 60
+    time_limit = (datetime.utcnow()- timedelta(hours = 24)).replace(microsecond=0)
+    entry_time_stamp = time_iso_utc(entry_time_stamp)
+    time_delta = ((time_limit-entry_time_stamp).total_seconds())/ 60
 
     return float(time_delta)
 
-def fetch_reviews_id(app_id, page_number=1):
 
+
+def fetch_reviews_id(app_id, page_number=1):
+    
     url = url_link(app_id, page_number)
 
-    try:
-        page_count = 0
+    if get_source(url) == 200:
+        try:
+            page_count = 0
 
-        with urllib.request.urlopen(url) as f:
-            data = json.loads(f.read().decode()).get('feed')
+            with urllib.request.urlopen(url) as f:
+                data = json.loads(f.read().decode()).get('feed')
 
-                  
-        if data.get('entry') == None:
-            fetch_reviews_id(app_id, page_number+1)
-
-
-        for entry in data.get('entry'):
-            title = entry.get('title').get('label')
-            author = entry.get('author').get('name').get('label')
-            time_stamp = entry.get('updated').get('label')      
-            version = entry.get('im:version').get('label')
-            rating = entry.get('im:rating').get('label')
-            review = entry.get('content').get('label')
-            vote_count = entry.get('im:voteCount').get('label')
-        
-            if time_check(time_stamp) <= 1440.00:
-                data = [title,  author, time_stamp ,version, rating, review, vote_count]
-                print(data)
-                csv_reader(data)
-
-            else:
-                page_count += 1
-
-        if page_count == 0:            
-            fetch_reviews_id(app_id, page_number+1)
+            if data.get('entry') == None:
+                fetch_reviews_id(app_id, page_number+1)
 
 
-    except Exception as e:
-        logging.error(f"fetch_reviews: {e}")
+            for entry in data.get('entry'):
+                title = entry.get('title').get('label')
+                time_stamp = entry.get('updated').get('label')
+                rating = entry.get('im:rating').get('label')
+                review = entry.get('content').get('label')
+                vote_count = entry.get('im:voteCount').get('label')
+                
+                if time_check(time_stamp) <= 1440.00:
+                    data = [title, time_iso_utc(time_stamp), rating, review, vote_count]
+                    csv_reader(data)
 
+                else:
+                    page_count += 1
 
-def fetch_reviews_url(url):
+            if page_count == 0:            
+                fetch_reviews_id(app_id, page_number+1)
 
-    try:
-        with urllib.request.urlopen(url) as f:
-            data = json.loads(f.read().decode()).get('feed')
+        except Exception as e:
+                logging.error(f"fetch_reviews_id: {e}")
 
-
-        for entry in data.get('entry'):
-            title = entry.get('title').get('label')
-            author = entry.get('author').get('name').get('label')
-            time_stamp = entry.get('updated').get('label')      
-            version = entry.get('im:version').get('label')
-            rating = entry.get('im:rating').get('label')
-            review = entry.get('content').get('label')
-            vote_count = entry.get('im:voteCount').get('label')
-            
-            if time_check(time_stamp) <= 1440.00:
-                data = [title,  author, time_stamp ,version, rating, review, vote_count]
-                csv_reader(data)
-
-    except Exception as e:
-        logging.error(f"fetch_reviews: {e}")
-
-
-def check_url(user_input):
-    try:
-        if get_source(user_input) == 200:
-            fetch_reviews_url(user_input)
-            
-    except Exception as e:
-        logging.error(f"URL does not exist: {e}")
 
 def get_url(user_input):
     get_id = re.findall('\d+', user_input)
     app_id = str(get_id[0])
-    fetch_reviews_id(app_id, page_number=1)
+    fetch_reviews_id(app_id)
